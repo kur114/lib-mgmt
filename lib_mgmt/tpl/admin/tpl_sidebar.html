@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Center</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/bootstrap_4.3.1.css' %}">
+    <link rel="stylesheet" href="{% static 'fontawesome-free-6.5.1/css/all.min.css' %}">
+    <script src="{% static 'js/jquery_3.6.0.js' %}"></script>
+    <style>
+        body { 
+            position: relative;
+            padding-top: 20px; 
+            background-image: url("{% static 'images/bg.jfif' %}");
+            background-size: cover;
+        }
+        .card {
+            border-radius: 10px; /* 添加这一行来修改全局卡片的圆角弧度 */
+        }
+        .number-shadow {
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .sidebar {
+            position: fixed;
+            padding-right: 0;
+            opacity: 0.75;
+        }
+        .sidebar .card {
+            margin-bottom: 10px;
+        }
+        .content {
+            padding-left: 30px;
+        }
+        .nav-item {
+            position: relative; /* 设置为relative，使得子元素的absolute定位是相对于这个元素 */
+            margin-bottom: 5px;
+        }
+        .nav-item i {
+            position: absolute; /* 设置为absolute，使得图标脱离正常的文档流 */
+            left: 10px;
+            top: 50%; /* 将图标向上移动50%，使其垂直居中 */
+            transform: translateY(-50%); /* 使用transform属性的translateY函数来进一步确保图标垂直居中 */
+        }
+        .nav-link {
+            display: block;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+            color: rgb(3, 66, 18);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .nav-link:hover {
+            background-color: #e2e6ea;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            color: rgb(1, 24, 7);
+        }
+        .darkify {
+            filter: invert(100%) hue-rotate(180deg);
+        }
+    </style>
+    <script>
+        function updateTime() {
+            var now = new Date();
+            var year = now.getFullYear();
+            var month = now.getMonth() + 1;
+            var day = now.getDate();
+            var hours = now.getHours();
+            var minutes = now.getMinutes();
+            var seconds = now.getSeconds();
+            month = month < 10 ? '0' + month : month;
+            day = day < 10 ? '0' + day : day;
+            hours = hours < 10 ? '0' + hours : hours;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+            document.getElementById('current-time').textContent = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
+        }
+
+        // 在页面加载完成后立即执行一次，然后每隔1000毫秒执行一次
+        $(document).ready(function() {
+            updateTime();
+            setInterval(updateTime, 1000);
+        });
+    </script>
+    {% block head %}
+    {% endblock %}
+</head>
+<body>
+    <div class="container-fluid">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-md-2"></div>
+            <!-- Left Sidebar -->
+            <div id="sidebar" class="sidebar col-md-2 darkify">
+                <!-- User Info Card -->
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h5 class="card-title text-center">Welcome, {{ user.first_name }}!</h5>
+                        <p id="current-time" class="card-text text-center">1919-08-10 11:45:14</p>
+                    </div>
+                </div>
+                <!-- Navigation Link Card -->
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <a href="{% url 'lib:admin_center' %}" class="btn btn-success btn-block">Dashboard</a>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Admin Management</h5>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <i class="fas fa-user"></i>
+                                <a href="{% url 'lib:reader_list' %}" class="nav-link">Reader</a>
+                            </li>
+                            <li class="nav-item">
+                                <i class="fas fa-book"></i>
+                                <a href="{% url 'lib:book_list' %}" class="nav-link">Book</a>
+                            </li>
+                            <li class="nav-item">
+                                <i class="fas fa-archive"></i>
+                                <a href="{% url 'lib:inventory_list' %}" class="nav-link">Inventory</a>
+                            </li>
+                            <li class="nav-item">
+                                <i class="fas fa-list"></i>
+                                <a href="{% url 'lib:category_list' %}" class="nav-link">Category</a>
+                            </li>
+                            <li class="nav-item">
+                                <i class="fas fa-history"></i>
+                                <a href="{% url 'lib:borrow_record_list' %}" class="nav-link">Borrow Record</a>
+                            </li>
+                            <li class="nav-item">
+                                <i class="fas fa-clipboard-list"></i>
+                                <a href="{% url 'lib:operation_log_list' %}" class="nav-link">Operation Log</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <a href="{% url 'lib:user_center' %}" class="btn btn-dark btn-block">User Center</a>
+                        <a href="{% url 'lib:user_logout' %}" class="btn btn-danger btn-block">Logout</a>
+                    </div>
+                </div>
+            </div>
+            <!-- Right Content Area -->
+            <div class="content col-md-10">
+                <h1 class="py-2" style="font-size: 3em; color: #181b01; padding: 20px;"><b>{% block title %}{% endblock %}</b></h1>
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+ 

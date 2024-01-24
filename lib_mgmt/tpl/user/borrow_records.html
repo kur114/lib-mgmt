@@ -1,0 +1,161 @@
+{% extends "user/tpl_sidebar.html" %}
+
+{% block head %}
+<style>
+    .list-group-item {
+        display: flex;
+        align-items: center;
+    }
+</style>
+<script>
+    function searchBooks() {
+        var input, filter, ul, li, a, i, txtValue;
+        input = document.getElementById("searchInput");
+        filter = input.value.toUpperCase();
+        ul = document.getElementById("bookList");
+        li = ul.getElementsByTagName("li");
+
+        for (i = 0; i < li.length; i++) {
+            a = li[i].textContent || li[i].innerText;
+            if (a.toUpperCase().indexOf(filter) > -1) {
+                li[i].style.display = "";
+            } else {
+                li[i].style.display = "none";
+            }
+        }
+    }
+    
+    function return_book(record_id) {
+        $.ajax({
+            type: 'POST',
+            url: '/user/return/commit/',
+            data: {
+                record_id: record_id,
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+            },
+            dataType: 'json',  // 预期的服务器响应类型
+            success: function(response) {
+                if (response.success) {
+                    alert('Returned successfully');
+                    location.reload();
+                } else {
+                    alert('Return failed');
+                }
+            },
+            error: function() {
+                alert('An error has occurred');
+            }
+        });
+    }
+
+    function parseMonth(month) {
+        var months = new Map();
+        months.set('Jan', '01');
+        months.set('Feb', '02');
+        months.set('Mar', '03');
+        months.set('Apr', '04');
+        months.set('May', '05');
+        months.set('Jun', '06');
+        months.set('Jul', '07');
+        months.set('Aug', '08');
+        months.set('Sep', '09');
+        months.set('Oct', '10');
+        months.set('Nov', '11');
+        months.set('Dec', '12');
+        return months.get(month);
+    }
+    function parseDate(input) {
+    var parts = input.split('.');
+    var month = parts[0];
+    var dayAndYear = parts[1].split(', ');
+    var day = dayAndYear[0];
+    var year = dayAndYear[1];
+    month = parseMonth(month);
+    var date = new Date(year, month - 1, day);
+    date.setHours(0, 0, 0, 0);
+    return date;
+}
+    
+    $(document).ready(function() {
+        var now = new Date();
+        now.setHours(0, 0, 0, 0);
+        var sevenDaysFromNow = new Date();
+        sevenDaysFromNow.setDate(now.getDate() + 7);
+        sevenDaysFromNow.setHours(0, 0, 0, 0);
+        
+        // 如果return_date <= now，整行标红加粗，在return_date后面写上" (n days passed)"；
+        // 如果 now < return_date <= now+7days 整行标黄不加粗，在return_date后面写上" (n days left)"
+        var bookList = document.getElementById('bookList');
+        var listItems = bookList.getElementsByTagName('li');
+        for (var i = 1; i < listItems.length; i++) {
+            var returnDate = listItems[i].getElementsByTagName('div')[4].textContent;
+            returnDate = parseDate(returnDate);
+            if (returnDate <= now) {
+                listItems[i].style.color = 'red';
+                listItems[i].style.fontWeight = 'bold';
+                var daysPassed = Math.floor((now - returnDate) / (1000 * 60 * 60 * 24));
+                listItems[i].getElementsByTagName('div')[4].textContent += ' (' + daysPassed + ' days passed)';
+            } else if (returnDate > now && returnDate <= sevenDaysFromNow) {
+                listItems[i].style.color = 'darkgoldenrod';
+                var daysLeft = Math.floor((returnDate - now) / (1000 * 60 * 60 * 24));
+                listItems[i].getElementsByTagName('div')[4].textContent += ' (' + daysLeft + ' days left)';
+            }
+        }
+    });
+</script>
+{% endblock %}
+
+{% block title %}Borrow Records{% endblock %}
+
+{% block content %}
+    <div class="row mx-5">
+        <div class="col-md-6 py-2">
+            <div class="card text-white bg-info mb-3" style="overflow: hidden; opacity: 0.85">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-book-open fa-2x me-3"></i>
+                    <h5 class="card-title flex-grow-1 text-end me-3 number-shadow" style="font-size: 2em; left: 30px; bottom: -2px; position: relative;">{{ count }}</h5>
+                    <div style="font-size: 1.5em;">Book Borrowed</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 py-2">
+            <div class="card text-white bg-info mb-3" style="overflow: hidden; opacity: 0.85">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-tasks fa-2x me-3"></i>
+                    <h5 class="card-title flex-grow-1 text-end me-3 number-shadow" style="font-size: 2em; left: 30px; bottom: -2px; position: relative;">{{ remaining }}</h5>
+                    <div style="font-size: 1.5em;">Remaining quota</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3 mx-5" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <h2>Book List</h2>
+        <input type="text" id="searchInput" class="form-control mb-3" style="width: 20%;" onkeyup="searchBooks()" placeholder="Search for books...">
+        <ul id="bookList" class="list-group">
+            <!-- 添加一个表头-->
+            <li class="list-group-item">
+                <div class="d-inline-block" style="width: 10%;"><b>Action</b></div>
+                <div class="d-inline-block" style="width: 25%;"><b>Title</b></div>
+                <div class="d-inline-block" style="width: 20%;"><b>Author</b></div>
+                <div class="d-inline-block" style="width: 20%;"><b>Borrow Date</b></div>
+                <div class="d-inline-block" style="width: 20%;"><b>Return Date</b></div>
+            </li>
+            {% for record in records %}
+                <li class="list-group-item">
+                    <div class="d-inline-block" style="width: 10%;">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="return_book({{record.id}})">Return</button>
+                    </div>
+                    <div class="d-inline-block" style="width: 25%;"><b>{{ record.inventory.book.title }}</b></div>
+                    <div class="d-inline-block" style="width: 20%;">{{ record.inventory.book.author }}</div>
+                    <div class="d-inline-block" style="width: 20%;">{{ record.borrow_date }}</div>
+                    <div class="d-inline-block" style="width: 20%;">{{ record.return_date }}</div>
+                </li>
+            {% empty %}
+                <li class="list-group-item">No records found.</li>
+            {% endfor %}
+        </ul>
+        <!-- Pagination logic can be added here -->
+        
+    </div>
+{% endblock %}

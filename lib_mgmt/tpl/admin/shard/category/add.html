@@ -1,0 +1,36 @@
+<script>
+    //处理submit事件
+    $('#addCategoryForm').submit(function(e) {
+        e.preventDefault();
+        var category_number = $('#category_number').val();
+        var category_name = $('#category_name').val();
+        var csrfmiddlewaretoken = $('input[name="csrfmiddlewaretoken"]').val();
+        $.post('/admin/categories/add/', {
+            'category_number': category_number,
+            'name': category_name,
+            'csrfmiddlewaretoken': csrfmiddlewaretoken
+        }, function(data) {
+            if (data.success) {
+                alert('Category added successfully!');
+                window.location.reload();
+            } else {
+                alert('Failed to add category! err: ' + data.error);
+            }
+        });
+    });
+</script>    
+<div class="card mx-5 mt-4" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+    <h3>Add Category</h3>
+    <form id="addCategoryForm" method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="category_number">Category Number:</label>
+            <input type="text" id="category_number" name="category_number" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="category_name">Category Name:</label>
+            <input type="text" id="category_name" name="category_name" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-warning">Submit</button>
+    </form>
+</div>

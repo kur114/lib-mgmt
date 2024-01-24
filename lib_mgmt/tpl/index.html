@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Library Management System</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script type="text/javascript">
+        window.onload = function() {
+            {% if user.is_authenticated %}
+                window.location.href = "{% url 'lib:user_center' %}";
+            {% endif %}
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5 text-center">Welcome to the Library Management System</h1>
+        <div class="mt-3 text-center">
+            <a href="{% url 'lib:user_login' %}" class="btn btn-primary">Login</a>
+            <a href="{% url 'lib:user_register' %}" class="btn btn-secondary ml-2">Register</a>
+        </div>
+    </div>
+</body>
+</html>

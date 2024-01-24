@@ -1,0 +1,57 @@
+{% extends "user/tpl_sidebar.html" %}
+
+{% block title %}View Profile{% endblock %}
+
+{% block head %}
+<style>
+    .profile-card {
+        background-color: #f8f9fa;
+        border-left: 4px solid #51b9bc;
+        transition: all 0.3s ease-in-out;
+        opacity: 0.8;
+        width: 50%;
+    }
+    .profile-card:hover {
+        background-color: #e2e6ea;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .profile-title {
+        color: #51b9bc;
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+    .profile-content {
+        font-size: 1.3em;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="mt-4 mx-5" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <h2 class="mb-4">Profile Information</h2>
+        
+        <div class="profile-card card mb-3">
+            <div class="row card-body">
+                <span class="col-md-4 profile-title">Username</span>
+                <span class="col-md-6 profile-content">{{ user.username }}</span>
+            </div>
+        </div>
+
+        <div class="profile-card card mb-3">
+            <div class="row card-body">
+                <span class="col-md-4 profile-title">Name</span>
+                <span class="col-md-6 profile-content">{{ user.first_name }} {{ user.last_name }}</span>
+            </div>
+        </div>
+
+        <div class="profile-card card mb-3">
+            <div class="row card-body">
+                <span class="col-md-4 profile-title">Email</span>
+                <span class="col-md-6 profile-content">{{ user.email }}</span>
+            </div>
+        </div>
+        <!-- 添加更多个人信息的展示 -->
+    </div>
+{% endblock %}

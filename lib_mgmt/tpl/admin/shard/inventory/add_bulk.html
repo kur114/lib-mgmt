@@ -1,0 +1,35 @@
+<!-- 批量添加库存的表单 -->
+<script>
+    // 处理submit事件
+    $(function() {
+        $('#bulkAddForm').submit(function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            $.ajax({
+                url: '/admin/inventories/add_bulk/',
+                type: 'POST',
+                data: formData,
+                success: function(data) {
+                    if (data.success) {
+                        alert('Inventories added successfully!');
+                        window.location.reload();
+                    }
+                },
+                error: function(data) {
+                    alert('Error adding inventories: ' + data.error);
+                },
+                cache: false,
+                contentType: false,
+                processData: false
+            });
+        });
+    });
+</script>
+<div class="card mx-5 mt-4" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+    <h3>Bulk Upload</h3>
+    <form id="bulkAddForm" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="inventories_file" accept=".csv">
+        <button type="submit" class="btn btn-warning">Submit</button>
+    </form>
+</div>

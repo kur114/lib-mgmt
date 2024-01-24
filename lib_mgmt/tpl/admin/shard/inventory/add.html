@@ -1,0 +1,93 @@
+<!-- Path: lib_mgmt/tpl/admin/shard/inventory/add.html -->
+<!-- Compare this snippet from lib_mgmt/tpl/admin/shard/book/add.html: -->
+<script>
+    // 处理submit事件
+    $('#addInventoryForm').submit(function(e) {
+        e.preventDefault();
+        var book = $('#bookSelect').val();
+        var status = $('#statusSelect').val();
+        var location = $('#location').val();
+        var csrfmiddlewaretoken = $('input[name="csrfmiddlewaretoken"]').val();
+        $.post('/admin/inventory/add/', {
+            'book_id': book,
+            'status': status,
+            'location': location,
+            'csrfmiddlewaretoken': csrfmiddlewaretoken
+        }, function(data) {
+            if (data.success) {
+                alert('Inventory added successfully!');
+                window.location.reload();
+            } else {
+                alert('Failed to add inventory! err: ' + data.error);
+            }
+        });
+    });
+    $(document).ready(function() {
+        // 获取所有书籍
+        $.get('/api/get_books', function(data) {
+            var select = document.getElementById('bookSelect');
+            data.forEach(function(item) {
+                var option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.title + ' - ' + item.index_number;
+                select.appendChild(option);
+            });
+        });
+    });
+
+    // 点击 Search 按钮时，发送请求，获取搜索结果
+    $('#searchBtn').click(function() {
+        var search = $('#search').val();
+        $.get('/api/get_books', {
+            'keyword': search
+        }, function(data) {
+            var select = document.getElementById('bookSelect');
+            select.innerHTML = '';
+            data.forEach(function(item) {
+                var option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.title + ' - ' + item.index_number;
+                select.appendChild(option);
+            });
+        });
+    });
+</script>
+
+<div class="card mx-5 mt-4" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+    <h3>Add Inventory</h3>
+    <form id="addInventoryForm" method="post">
+        {% csrf_token %}
+        <!--搜索框-->
+        <div class="form-group">
+            <input type="text" id="search" name="search" placeholder="Search for book title..." class="form-control">
+            <button type="button" id="searchBtn" class="btn btn-warning">Search</button>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="form-group">
+                    <label for="bookSelect">Book:</label>
+                    <select id="bookSelect" name="bookSelect" class="form-control"></select>
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group">
+                    <label for="statusSelect">Status:</label>
+                    <select id="statusSelect" name="statusSelect" class="form-control">
+                        <option value="-1">Removed</option>
+                        <option value="0">Under Maintenance</option>
+                        <option value="1" selected=true>In Library</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="form-group">
+                    <label for="location">Location:</label>
+                    <input type="text" id="location" name="location" class="form-control">
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-warning">Submit</button>
+    </form>
+</div>

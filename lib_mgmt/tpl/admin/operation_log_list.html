@@ -1,0 +1,107 @@
+{% extends "admin/tpl_sidebar.html" %}
+
+{% block head %}
+<style>
+    .list-group-item {
+        display: flex;
+        align-items: center;
+    }
+</style>
+<script>
+    var page = 1;
+    var searchTitle;
+
+    $(document).ready(function() {
+        $('#searchForm').submit(function(e) {
+            e.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: '{% url "lib:operation_log_list" %}',
+                data: {
+                    page: page,
+                    keyword: $('#keyword').val(),
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(response) {
+                    searchTitle = $('#searchTitle');
+                    searchTitle.empty();
+                    searchTitle.append('<h3>Search results for "' + response.keyword + '"</h3>');
+                    searchTitle.append('<p>Found ' + response.count + ' logs</p>');
+                    var itemsList = $('#itemsList');
+                    itemsList.empty();
+                    // 添加一个表头
+                    var header = $('<li class="list-group-item"></li>');
+                    header.append('<div class="d-inline-block" style="width: 15%;"><b>Time</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 10%;"><b>Username</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 10%;"><b>Type</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 65%;"><b>Content</b></div>');
+                    itemsList.append(header);
+                    response.logs.forEach(function(it) {
+                        var id = it.id;
+                        var item = $('<li class="list-group-item"></li>');
+                        item.append('<div class="d-inline-block" style="width: 15%;">' + it.time + '</div>');
+                        item.append('<div class="d-inline-block" style="width: 10%;">' + it.username + '</div>');
+                        item.append('<div class="d-inline-block" style="width: 10%;">' + it.operation_type + '</div>');
+                        item.append('<div class="d-inline-block" style="width: 65%;">' + it.content + '</div>');
+
+                        itemsList.append(item);
+                    }); 
+                    generatePaginationButtons(response.page_count);
+                },
+                error: function() {
+                    $('#itemsList').html('<p>An error occurred</p>');
+                }
+            });
+        });
+
+        $('#searchForm').trigger('submit');
+
+        // 点击search按钮时隐藏detail
+        $('#searchForm').click(function() {
+            $('#detail').html('');
+        });
+
+    });
+
+    // 使用全局变量生成分页按钮
+    function generatePaginationButtons(pageCount) {
+        $('#pagination').empty();
+        for (var i = 1; i <= pageCount; i++) {
+            // 美观的分页按钮
+            var btn = $('<button type="button" class="btn btn-outline-primary btn-sm mx-1 my-3">' + i + '</button>');
+            btn.attr('id', i);
+            $('#pagination').append(btn);
+        }
+
+        // 为每个按钮添加一个点击事件处理器
+        $('#pagination button').click(function() {
+            page = $(this).attr('id');
+            // trigger searchForm submit event
+            $('#searchForm').trigger('submit');
+        });
+    }
+</script>
+{% endblock %}
+
+{% block title %}Operation Logs{% endblock %}
+
+{% block content %}
+    <div class="card mx-5 mt-4" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <h2>Search Logs</h2>
+        <form id="searchForm" method="post" class="form-inline">
+            {% csrf_token %}
+            <input type="text" id="keyword" name="keyword" class="form-control mr-sm-2" placeholder="Search for logs...">
+            <button type="submit" class="btn btn-warning">Search</button>
+        </form>
+    </div>
+
+    <div id="detail">
+    </div>
+
+    <div class="card mx-5 mt-3" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <div id="searchTitle"></div>
+        <ul id="itemsList" class="list-group">
+        </ul>
+        <div id="pagination"></div>
+    </div>
+{% endblock %}

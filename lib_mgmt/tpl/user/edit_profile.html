@@ -1,0 +1,106 @@
+{% extends "user/tpl_sidebar.html" %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block head %}
+<style>
+    .form-card {
+        background-color: #fff8f2; /* 低饱和度橙色背景 */
+        border-left: 4px solid #ff9f40; /* 橙色边框 */
+        transition: all 0.3s ease-in-out;
+        width: 50%;
+        opacity: 0.8;
+    }
+    .form-card:hover {
+        background-color: #fff4e6; /* 悬停时更淡的橙色 */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .form-title {
+        color: #ff9f40; /* 橙色字体 */
+        font-weight: bold;
+        display: flex;
+        align-items: center; /* 字上下居中 */
+        font-size: 1.2em;
+    }
+    .form-content {
+        font-size: 1.3em;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    .form-content input {
+        font-size: 1em;
+        font-weight: 400;
+        margin: -5px;
+        border: 1px solid #ccc;
+        border-radius: 5px; /* 圆角 */
+        box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1); /* 添加阴影 */
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* 添加过渡效果 */
+        width: 100%; /* 让输入框占满可用空间 */
+    }
+    .form-content input:focus {
+        border-color: #ff9f40;
+        box-shadow: 0 0 5px rgba(102, 175, 233, 0.6); /* 当输入框聚焦时，改变边框颜色和阴影 */
+    }
+    .save-button {
+        background-color: #ff9f40; /* 橙色按钮 */
+        color: white;
+        font-weight: bold;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+    }
+    .save-button:hover {
+        background-color: #e68a00; /* 深橙色 */
+    }
+</style>
+
+<script>
+    $(document).ready(function(){
+      $(".save-button").click(function(){
+        $("form").submit();
+      });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+    <div class="mt-4 mx-5" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Edit Profile</h2>
+            <button type="button" class="save-button">Save changes</button>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+                <div class="form-card card mb-3">
+                    <div class="row card-body">
+                        <span class="col-md-4 form-title">Username</span>
+                        <span class="col-md-6 form-content">{{ form.username }}</span>
+                        <small class="col-md-6 offset-md-4 form-text text-muted">{{ form.username.help_text }}</small>
+                    </div>
+                </div>
+
+            <div class="form-card card mb-3">
+                <div class="row card-body">
+                    <span class="col-md-4 form-title">First Name</span>
+                    <span class="col-md-6 form-content">{{ form.first_name }}</span>
+                </div>
+            </div>
+
+            <div class="form-card card mb-3">
+                <div class="row card-body">
+                    <span class="col-md-4 form-title">Last Name</span>
+                    <span class="col-md-6 form-content">{{ form.last_name }}</span>
+                </div>
+            </div>
+
+            <div class="form-card card mb-3">
+                <div class="row card-body">
+                    <span class="col-md-4 form-title">Email</span>
+                    <span class="col-md-6 form-content">{{ form.email }}</span>
+                </div>
+            </div>
+        </form>
+    </div>
+{% endblock %}

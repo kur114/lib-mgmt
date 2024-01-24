@@ -1,0 +1,185 @@
+{% extends "admin/tpl_sidebar.html" %}
+
+{% block head %}
+<style>
+    .list-group-item {
+        display: flex;
+        align-items: center;
+    }
+    .editBookBtn, .deleteBookBtn {
+        margin-right: 10px;
+    }
+</style>
+<script>
+    var page = 1;
+    var searchTitle;
+
+    $(document).ready(function() {
+        $('#searchForm').submit(function(e) {
+            e.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: '{% url "lib:book_list" %}',
+                data: {
+                    page: page,
+                    books_keyword: $('#books_keyword').val(),
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(response) {
+                    searchTitle = $('#searchTitle');
+                    searchTitle.empty();
+                    searchTitle.append('<h3>Search results for "' + response.keyword + '"</h3>');
+                    searchTitle.append('<p>Found ' + response.count + ' books</p>');
+                    var booksList = $('#booksList');
+                    booksList.empty();
+                    // 添加一个表头
+                    var header = $('<li class="list-group-item"></li>');
+                    header.append('<div class="d-inline-block" style="width: 14%;"><b>Action</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 20%;"><b>Title</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 20%;"><b>Author</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 20%;"><b>Publisher</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 15%;"><b>Category</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 15%;"><b>Index number</b></div>');
+                    booksList.append(header);
+                    response.books.forEach(function(book) {
+                        var bookId = book.id;
+                        var bookItem = $('<li class="list-group-item"></li>');
+                        
+                        var buttonDiv = $('<div class="d-inline-block" style="width: 14%;"></div>');
+                        var bt1 = $('<button class="btn btn-warning editBookBtn" data-id=' + bookId + '>Edit</button>');
+                        var bt2 = $('<button class="btn btn-danger deleteBookBtn" data-id=' + bookId + '>Delete</button>');
+                        buttonDiv.append(bt1);
+                        buttonDiv.append(bt2);
+                        bookItem.append(buttonDiv);
+                        
+                        var titleDiv = $('<div class="d-inline-block" style="width: 20%;"><b>' + book.title + '</b></div>');
+                        bookItem.append(titleDiv);
+                        
+                        var authorDiv = $('<div class="d-inline-block" style="width: 20%;">' + book.author + '</div>');
+                        bookItem.append(authorDiv);
+                        
+                        var publisherDiv = $('<div class="d-inline-block" style="width: 20%;">' + book.publish_date + '/' + book.publisher + '</div>');
+                        bookItem.append(publisherDiv);
+                        
+                        var categoryDiv = $('<div class="d-inline-block" style="width: 15%;">' + book.category_name + '</div>');
+                        bookItem.append(categoryDiv);
+                        
+                        var indexNumberDiv = $('<div class="d-inline-block" style="width: 15%;">' + book.index_number + '</div>');
+                        bookItem.append(indexNumberDiv);
+
+                        booksList.append(bookItem);
+                    }); 
+                    generatePaginationButtons(response.page_count);
+                },
+                error: function() {
+                    $('#booksList').html('<p>An error occurred</p>');
+                }
+            });
+        });
+
+        $('#searchForm').trigger('submit');
+
+        // 点击search按钮时隐藏detail
+        $('#searchForm').click(function() {
+            $('#detail').html('');
+        });
+
+        // 处理添加书籍
+        $('#addBookBtn').click(function() {
+            $.ajax({
+                url: '/admin/books/add/',
+                type: 'get',
+                success: function(data) {
+                    $('#detail').html(data);
+                }
+            });
+        });
+
+        // 处理批量添加书籍
+        $('#bulkAddBookBtn').click(function() {
+            $.ajax({
+                url: '/admin/books/add_bulk/',
+                type: 'get',
+                success: function(data) {
+                    $('#detail').html(data);
+                }
+            });
+        });
+
+        // 处理编辑书籍
+        $(document).on('click', '.editBookBtn', function() {
+            var bookId = $(this).data('id');
+            $.ajax({
+                url: '/admin/books/edit/',
+                type: 'get',
+                data: {'book_id': bookId},
+                success: function(data) {
+                    $('#detail').html(data);
+                }
+            });
+        });
+
+        // 处理删除书籍
+        $(document).on('click', '.deleteBookBtn', function() {
+            var bookId = $(this).data('id');
+            var csrfmiddlewaretoken = $('input[name="csrfmiddlewaretoken"]').val();
+            if (confirm('Are you sure you want to delete this book?')) {
+                $.post('/admin/books/delete/', {'book_id': bookId, 'csrfmiddlewaretoken': csrfmiddlewaretoken}, function(data) {
+                    if (data.success) {
+                        alert('Book deleted successfully!');
+                        window.location.reload();
+                    } else {
+                        alert('Failed to delete book! err: ' + data.error);
+                    }
+                });
+            }
+        });
+
+    });
+
+    // 使用全局变量生成分页按钮
+    function generatePaginationButtons(pageCount) {
+        $('#pagination').empty();
+        for (var i = 1; i <= pageCount; i++) {
+            // 美观的分页按钮
+            var btn = $('<button type="button" class="btn btn-outline-primary btn-sm mx-1 my-3">' + i + '</button>');
+            btn.attr('id', i);
+            $('#pagination').append(btn);
+        }
+
+        // 为每个按钮添加一个点击事件处理器
+        $('#pagination button').click(function() {
+            page = $(this).attr('id');
+            // trigger searchForm submit event
+            $('#searchForm').trigger('submit');
+        });
+    }
+</script>
+{% endblock %}
+
+{% block title %}Book{% endblock %}
+
+{% block content %}
+    <div class="card mx-5 mt-4" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <h2>Search Books</h2>
+        <div class="mb-2">
+            <button id="addBookBtn" class="btn btn-primary">Add Book</button>
+            <button id="bulkAddBookBtn" class="btn btn-primary">Bulk Upload</button>
+        </div>
+        <form id="searchForm" method="post" class="form-inline">
+            {% csrf_token %}
+            <input type="text" id="books_keyword" name="books_keyword" class="form-control mr-sm-2" placeholder="Search for books...">
+            <button type="submit" class="btn btn-warning">Search</button>
+        </form>
+    </div>
+
+    <div id="detail">
+    </div>
+
+    <div class="card mx-5 mt-3" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <div id="searchTitle"></div>
+        <ul id="booksList" class="list-group">
+        </ul>
+        <div id="pagination"></div>
+    </div>
+{% endblock %}

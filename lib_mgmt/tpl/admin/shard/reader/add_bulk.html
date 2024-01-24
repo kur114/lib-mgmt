@@ -1,0 +1,33 @@
+<script>
+    // 处理 submit 事件
+    $('#bulkAddForm').submit(function(e) {
+        e.preventDefault();
+        var formData = new FormData(this);
+        $.ajax({
+            url: '/admin/readers/add_bulk/',
+            type: 'POST',
+            data: formData,
+            success: function(data) {
+                if (data.success) {
+                    alert('Readers added successfully!');
+                    window.location.reload();
+                }
+            },
+            error: function(data) {
+                alert('Error adding readers: ' + data.error);
+            },
+            cache: false,
+            contentType: false,
+            processData: false
+        });
+    });
+</script>
+
+<div class="card mx-5 mt-4" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+    <h3>Bulk Upload</h3>
+    <form id="bulkAddForm" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="readers_file" accept=".csv">
+        <button type="submit" class="btn btn-warning">Submit</button>
+    </form>
+</div>

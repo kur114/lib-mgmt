@@ -1,0 +1,112 @@
+<style>
+    #categorySelect {
+        font-size: 16px;
+        color: #333;
+        border: 1px solid #ccc;
+    }
+</style>
+<script>
+    // 处理submit事件
+    $('#addBookForm').submit(function(e) {
+        e.preventDefault();
+        var title = $('#title').val();
+        var author = $('#author').val();
+        var publisher = $('#publisher').val();
+        var publish_date = $('#publish_date').val();
+        var index_number = $('#index_number').val();
+        var category = $('#categorySelect').val();
+        var description = $('#description').val();
+        var csrfmiddlewaretoken = $('input[name="csrfmiddlewaretoken"]').val();
+        $.post('/admin/books/add/', {
+            'title': title,
+            'author': author,
+            'publisher': publisher,
+            'publish_date': publish_date,
+            'index_number': index_number,
+            'category': category,
+            'description': description,
+            'csrfmiddlewaretoken': csrfmiddlewaretoken
+        }, function(data) {
+            if (data.success) {
+                alert('Book added successfully!');
+                window.location.reload();
+            } else {
+                alert('Failed to add book! err: ' + data.error);
+            }
+        });
+    });
+
+    $(document).ready(function() {
+    // 获取所有分类
+        $.get('/api/get_categories', function(data) {
+            var select = document.getElementById('categorySelect');
+            data.forEach(function(item) {
+                var option = document.createElement('option');
+                option.value = item.category_number;
+                option.textContent = item.category_number + ' - ' + item.name;
+                select.appendChild(option);
+            });
+        });
+    });
+</script>
+
+<div class="card mx-5 mt-4" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+    <h3>Add Book</h3>
+    <form id="addBookForm" method="post">
+        {% csrf_token %}
+        <div class="container">
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="title">Title:</label>
+                        <input type="text" id="title" name="title" class="form-control">
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label for="author">Author:</label>
+                        <input type="text" id="author" name="author" class="form-control">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="publisher">Publisher:</label>
+                        <input type="text" id="publisher" name="publisher" class="form-control">
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label for="publish_date">Publish Date:</label>
+                        <input type="text" id="publish_date" name="publish_date" class="form-control">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="index_number">Index Number:</label>
+                        <input type="text" id="index_number" name="index_number" class="form-control">
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label for="categorySelect">Category:</label>
+                        <select id="categorySelect" name="categorySelect" class="form-control"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <input type="text" id="description" name="description" class="form-control">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-warning">Submit</button>
+    </form>
+</div>
+

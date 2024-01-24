@@ -1,0 +1,55 @@
+{% if book %}
+    <div class="card mx-5 mt-4" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <h3>{{ book.title }}</h3>
+        <p><b>Description: </b>{{ book.description }}</p>
+        <ul class="list-group">
+            <!-- 添加一个表头-->
+            <li class="list-group-item">
+                <div class="d-inline-block" style="width: 10%;"><b>Action</b></div>
+                <div class="d-inline-block" style="width: 40%;"><b>Location</b></div>
+                <div class="d-inline-block" style="width: 20%;"><b>Status</b></div>
+                <div class="d-inline-block" style="width: 25%;"><b>Estimated return date</b></div>
+            </li>
+            {% for record in inventory %}
+                <li class="list-group-item">
+                    <div class="d-inline-block" style="width: 10%;">
+                        {% if record.status == 1 %}
+                            <button class="btn btn-warning btn-sm" onclick="borrowBook({{ record.id }})">Borrow</button>
+                        {% endif %}
+                    </div>
+                    <div class="d-inline-block" style="width: 40%;">{{ record.location }}</div>
+                    <div class="d-inline-block" style="width: 20%;">{{ record.get_status_display }}</div>
+                    <div class="d-inline-block" style="width: 25%;">{{ record.return_date }}</div>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% else %}
+    <div class="mx-5 mt-4">
+        <p>Cannot find information about this book.</p>
+    </div>
+{% endif %}
+
+<script>
+    function borrowBook(invId) {
+        $.ajax({
+            type: 'POST',
+            url: '/user/borrow/commit/',
+            data: {
+                inv_id: invId,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if(response.success) {
+                    alert('Borrow successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Borrow failed! Error: ' + response.error);
+                }
+            },
+            error: function() {
+                alert('An error has occurred')
+            }
+        });
+    }
+</script>

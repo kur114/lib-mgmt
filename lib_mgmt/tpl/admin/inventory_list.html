@@ -1,0 +1,174 @@
+{% extends "admin/tpl_sidebar.html" %}
+
+{% block head %}
+<style>
+    .list-group-item {
+        display: flex;
+        align-items: center;
+    }
+    .editBtn, .deleteBtn {
+        margin-right: 10px;
+    }
+</style>
+<script>
+    var page = 1;
+    var searchTitle;
+
+    $(document).ready(function() {
+        $('#searchForm').submit(function(e) {
+            e.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: '{% url "lib:inventory_list" %}',
+                data: {
+                    page: page,
+                    inventories_keyword: $('#inventories_keyword').val(),
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(response) {
+                    searchTitle = $('#searchTitle');
+                    searchTitle.empty();
+                    searchTitle.append('<h3>Search results for "' + response.keyword + '"</h3>');
+                    searchTitle.append('<p>Found ' + response.count + ' inventories</p>');
+                    var itemsList = $('#itemsList');
+                    itemsList.empty();
+                    // 添加一个表头
+                    var header = $('<li class="list-group-item"></li>');
+                    header.append('<div class="d-inline-block" style="width: 14%;"><b>Action</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 20%;"><b>Book</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 15%;"><b>Index number</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 15%;"><b>Status</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 30%;"><b>Location</b></div>');
+                    itemsList.append(header);
+                    response.inventories.forEach(function(inv) {
+                        var id = inv.id;
+                        var item = $('<li class="list-group-item"></li>');
+                        
+                        var buttonDiv = $('<div class="d-inline-block" style="width: 14%;"></div>');
+                        var bt1 = $('<button class="btn btn-warning editBtn" data-id=' + id + '>Edit</button>');
+                        var bt2 = $('<button class="btn btn-danger deleteBtn" data-id=' + id + '>Delete</button>');
+                        buttonDiv.append(bt1);
+                        buttonDiv.append(bt2);
+                        item.append(buttonDiv);
+                        
+                        item.append('<div class="d-inline-block" style="width: 20%;"><b>' + inv.book_title + '</b></div>');
+                        item.append('<div class="d-inline-block" style="width: 15%;">' + inv.book_index_number + '</div>');
+                        item.append('<div class="d-inline-block" style="width: 15%;">' + inv.status + '</div>');
+                        item.append('<div class="d-inline-block" style="width: 30%;">' + inv.location + '</div>');
+
+                        itemsList.append(item);
+                    }); 
+                    generatePaginationButtons(response.page_count);
+                },
+                error: function() {
+                    $('#itemsList').html('<p>An error occurred</p>');
+                }
+            });
+        });
+
+        $('#searchForm').trigger('submit');
+
+        // 点击search按钮时隐藏detail
+        $('#searchForm').click(function() {
+            $('#detail').html('');
+        });
+
+        // 处理添加库存记录
+        $('#addBtn').click(function() {
+            $.ajax({
+                url: '/admin/inventory/add/',
+                type: 'get',
+                success: function(data) {
+                    $('#detail').html(data);
+                }
+            });
+        });
+
+        // 处理批量添加库存记录
+        $('#bulkAddBtn').click(function() {
+            $.ajax({
+                url: '/admin/inventory/add_bulk/',
+                type: 'get',
+                success: function(data) {
+                    $('#detail').html(data);
+                }
+            });
+        });
+
+        // 处理编辑库存记录
+        $(document).on('click', '.editBtn', function() {
+            var inventoryId = $(this).data('id');
+            $.ajax({
+                url: '/admin/inventory/edit/',
+                type: 'get',
+                data: {'inventory_id': inventoryId},
+                success: function(data) {
+                    $('#detail').html(data);
+                }
+            });
+        });
+
+        // 处理删除库存记录
+        $(document).on('click', '.deleteBtn', function() {
+            var inventoryId = $(this).data('id');
+            var csrfmiddlewaretoken = $('input[name="csrfmiddlewaretoken"]').val();
+            if (confirm('Are you sure you want to delete this inventory record?')) {
+                $.post('/admin/inventory/delete/', {'inventory_id': inventoryId, 'csrfmiddlewaretoken': csrfmiddlewaretoken}, function(data) {
+                    if (data.success) {
+                        alert('Inventory record deleted successfully!');
+                        window.location.reload();
+                    } else {
+                        alert('Failed to delete inventory record! err: ' + data.error);
+                    }
+                });
+            }
+        });
+
+    });
+
+    // 使用全局变量生成分页按钮
+    function generatePaginationButtons(pageCount) {
+        $('#pagination').empty();
+        for (var i = 1; i <= pageCount; i++) {
+            // 美观的分页按钮
+            var btn = $('<button type="button" class="btn btn-outline-primary btn-sm mx-1 my-3">' + i + '</button>');
+            btn.attr('id', i);
+            $('#pagination').append(btn);
+        }
+
+        // 为每个按钮添加一个点击事件处理器
+        $('#pagination button').click(function() {
+            page = $(this).attr('id');
+            // trigger searchForm submit event
+            $('#searchForm').trigger('submit');
+        });
+    }
+</script>
+{% endblock %}
+
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+    <div class="card mx-5 mt-4" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <h2>Search Inventories</h2>
+        <div class="mb-2">
+            <button id="addBtn" class="btn btn-primary">Add Inventory</button>
+            <button id="bulkAddBtn" class="btn btn-primary">Bulk Upload</button>
+        </div>
+        <form id="searchForm" method="post" class="form-inline">
+            {% csrf_token %}
+            <input type="text" id="inventories_keyword" name="inventories_keyword" class="form-control mr-sm-2" placeholder="Search for inventories...">
+            <button type="submit" class="btn btn-warning">Search</button>
+        </form>
+    </div>
+
+    <div id="detail">
+    </div>
+
+    <div class="card mx-5 mt-3" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <div id="searchTitle"></div>
+        <ul id="itemsList" class="list-group">
+        </ul>
+        <div id="pagination"></div>
+    </div>
+{% endblock %}

@@ -1,0 +1,87 @@
+<!-- Path: lib_mgmt/tpl/admin/shard/inventory/edit.html -->
+<!-- Compare this snippet from lib_mgmt/tpl/admin/shard/book/edit.html: -->
+<script>
+    // 处理submit事件
+    $('#editInventoryForm').submit(function(e) {
+        e.preventDefault();
+        var status = $('#statusSelect').val();
+        var location = $('#location').val();
+        var csrfmiddlewaretoken = $('input[name="csrfmiddlewaretoken"]').val();
+        $.post('/admin/inventory/edit/', {
+            'inventory_id': {{inventory.id}},
+            'status': status,
+            'location': location,
+            'csrfmiddlewaretoken': csrfmiddlewaretoken
+        }, function(data) {
+            if (data.success) {
+                alert('Inventory edited successfully!');
+                window.location.reload();
+            } else {
+                alert('Failed to edit inventory! err: ' + data.error);
+            }
+        });
+    });
+
+    // status处理：borrow=2时锁死disabled，borrow!=2时删除borrow=2的选项
+    $(document).ready(function() {
+        var status = {{inventory.status}};
+        if (status == 2) {
+            $('#statusSelect').val(2);
+            $('#statusSelect').attr("disabled", true);
+        } else {
+            $('#statusSelect option[value="2"]').remove();
+            $('#statusSelect').val(status);
+        }
+    });
+</script>
+
+<div class="card mx-5 mt-4" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+    <h3>Edit Inventory</h3>
+    <form id="editInventoryForm" method="post">
+        {% csrf_token %}
+        <div class="container">
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="book">Book:</label>
+                        <input type="text" id="book" name="book" value="{{inventory.book.title}} - {{inventory.book.index_number}}" disabled class="form-control">
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label for="statusSelect">Status:</label>
+                        <select id="statusSelect" name="status" class="form-control">
+                            <option value="-1">Removed</option>
+                            <option value="0">Under Maintenance</option>
+                            <option value="1">In Library</option>
+                            <option value="2">Borrowed</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="location">Location:</label>
+                        <input type="text" id="location" name="location" value="{{inventory.location}}" class="form-control">
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label for="last_borrowed_on">Last Borrowed On:</label>
+                        <input type="text" id="last_borrowed_on" name="last_borrowed_on" value="{{inventory.last_borrowed_on}}" disabled class="form-control">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="last_borrowed_by">Last Borrowed By:</label>
+                        <input type="text" id="last_borrowed_by" name="last_borrowed_by" value="{{inventory.last_borrowed_by.user.first_name}} {{inventory.last_borrowed_by.user.last_name}}" disabled class="form-control">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-warning">Submit</button>
+    </form>
+</div>

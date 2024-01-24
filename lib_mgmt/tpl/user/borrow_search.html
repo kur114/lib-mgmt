@@ -1,0 +1,141 @@
+{% extends "user/tpl_sidebar.html" %}
+
+{% block head %}
+<style>
+    .list-group-item {
+        display: flex;
+        align-items: center;
+    }
+</style>
+<script>
+    var page = 1;
+    var searchTitle;
+
+    $(document).ready(function() {
+        $('#searchForm').submit(function(e) {
+            e.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: '/user/search/',
+                data: {
+                    page: page,
+                    books_keyword: $('#books_keyword').val(),
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(response) {
+                    searchTitle = $('#searchTitle');
+                    searchTitle.empty();
+                    searchTitle.append('<h3>Search results for "' + response.keyword + '"</h3>');
+                    searchTitle.append('<p>Found ' + response.count + ' books</p>');
+                    var booksList = $('#booksList');
+                    booksList.empty();
+                    // 添加一个表头
+                    var header = $('<li class="list-group-item"></li>');
+                    header.append('<div class="d-inline-block" style="width: 10%;"><b>Action</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 20%;"><b>Title</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 20%;"><b>Author</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 20%;"><b>Publisher</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 15%;"><b>Category</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 15%;"><b>Index number</b></div>');
+                    booksList.append(header);
+                    response.books.forEach(function(book) {
+                        var bookItem = $('<li class="list-group-item"></li>');
+                        
+                        var buttonDiv = $('<div class="d-inline-block" style="width: 10%;"></div>');
+                        var button = $('<button type="button" class="btn btn-warning btn-sm" onclick="viewBookDetail(' + book.id + ')">View detail</button>');
+                        buttonDiv.append(button);
+                        bookItem.append(buttonDiv);
+                        
+                        var titleDiv = $('<div class="d-inline-block" style="width: 20%;"><b>' + book.title + '</b></div>');
+                        bookItem.append(titleDiv);
+                        
+                        var authorDiv = $('<div class="d-inline-block" style="width: 20%;">' + book.author + '</div>');
+                        bookItem.append(authorDiv);
+                        
+                        var publisherDiv = $('<div class="d-inline-block" style="width: 20%;">' + book.publish_date + '/' + book.publisher + '</div>');
+                        bookItem.append(publisherDiv);
+                        
+                        var categoryDiv = $('<div class="d-inline-block" style="width: 15%;">' + book.category_name + '</div>');
+                        bookItem.append(categoryDiv);
+                        
+                        var indexNumberDiv = $('<div class="d-inline-block" style="width: 15%;">' + book.index_number + '</div>');
+                        bookItem.append(indexNumberDiv);
+
+                        booksList.append(bookItem);
+                    }); 
+                    generatePaginationButtons(response.page_count);
+                },
+                error: function() {
+                    $('#booksList').html('<p>An error occurred</p>');
+                }
+            });
+        });
+        $('#searchForm').trigger('submit');
+
+        // 点击search按钮时隐藏bookDetail
+        $('#searchForm').click(function() {
+            $('#bookDetail').html('');
+        });
+
+        window.viewBookDetail = function(bookId) {
+            $.ajax({
+                type: 'GET',
+                url: '/user/book/',
+                data: { book_id: bookId },
+                success: function(response) {
+                    var content = $('<div class="card mx-5 mt-3" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;"><h2>Book Detail</h2>'
+                         + response + '</div>');
+                    $('#bookDetail').html(content);
+                },
+                error: function() {
+                    $('#bookDetail').html('<p>An error occurred</p>');
+                }
+            });
+        };
+
+    });
+
+    // 使用全局变量生成分页按钮
+    function generatePaginationButtons(pageCount) {
+        $('#pagination').empty();
+        for (var i = 1; i <= pageCount; i++) {
+            // 美观的分页按钮
+            var btn = $('<button type="button" class="btn btn-outline-primary btn-sm mx-1 my-3">' + i + '</button>');
+            btn.attr('id', i);
+            $('#pagination').append(btn);
+        }
+
+        // 为每个按钮添加一个点击事件处理器
+        $('#pagination button').click(function() {
+            page = $(this).attr('id');
+            // trigger searchForm submit event
+            $('#searchForm').trigger('submit');
+        });
+    }
+</script>
+{% endblock %}
+
+{% block title %}Borrow Books{% endblock %}
+
+{% block content %}
+    <div class="card mx-5 mt-4" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <h2>Search Books</h2>
+        <form id="searchForm" method="post" class="form-inline">
+            {% csrf_token %}
+            <input type="text" id="books_keyword" name="books_keyword" class="form-control mr-sm-2" placeholder="Search for books...">
+            <button type="submit" class="btn btn-warning btn-sm">Search</button>
+        </form>
+    </div>
+
+    <div id="bookDetail">
+        <!-- Book detail and inventory will be shown here -->
+    </div>
+
+    <div class="card mx-5 mt-3" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <div id="searchTitle"></div>
+        <ul id="booksList" class="list-group">
+            <!-- List of books will be populated here -->
+        </ul>
+        <div id="pagination"></div>
+    </div>
+{% endblock %}

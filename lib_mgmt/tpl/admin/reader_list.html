@@ -1,0 +1,201 @@
+{% extends "admin/tpl_sidebar.html" %}
+
+{% block head %}
+<style>
+    .list-group-item {
+        display: flex;
+        align-items: center;
+    }
+    .editBtn, .deleteBtn {
+        margin-right: 10px;
+    }
+</style>
+<script>
+    var page = 1;
+    var searchTitle;
+
+    $(document).ready(function() {
+        $('#searchForm').submit(function(e) {
+            e.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: '{% url "lib:reader_list" %}',
+                data: {
+                    page: page,
+                    readers_keyword: $('#keyword').val(),
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(response) {
+                    searchTitle = $('#searchTitle');
+                    searchTitle.empty();
+                    searchTitle.append('<h3>Search results for "' + response.keyword + '"</h3>');
+                    searchTitle.append('<p>Found ' + response.count + ' readers</p>');
+                    var itemsList = $('#itemsList');
+                    itemsList.empty();
+                    // 添加一个表头
+                    var header = $('<li class="list-group-item"></li>');
+                    header.append('<div class="d-inline-block" style="width: 15%;"><b>Action</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 15%;"><b>Username</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 20%;"><b>Name</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 20%;"><b>Email</b></div>');
+                    header.append('<div class="d-inline-block" style="width: 15%;"><b>Max borrow limit</b></div>');
+                    itemsList.append(header);
+                    response.readers.forEach(function(it) {
+                        var id = it.id;
+                        var item = $('<li class="list-group-item"></li>');
+                        
+                        var buttonDiv = $('<div class="d-inline-block" style="width: 15%;"></div>');
+                        var bt1 = $('<button class="btn btn-warning editBtn" data-id=' + id + '>Edit</button>');
+                        // bt2: is_active button: green("Enabled") or red("Disabled"), click to toggle
+                        if (it.is_active) {
+                            var bt2 = $('<button class="btn btn-success statusBtn" data-id=' + id + '>Enabled</button>');
+                        } else {
+                            var bt2 = $('<button class="btn btn-danger statusBtn" data-id=' + id + '>Disabled</button>');
+                        }
+                        buttonDiv.append(bt1);
+                        buttonDiv.append(bt2);
+                        item.append(buttonDiv);
+                        if(it.is_staff) {
+                            item.append('<div class="d-inline-block" style="width: 15%;color: red;"><b>' + it.username + '</b></div>');
+                        } else {
+                            item.append('<div class="d-inline-block" style="width: 15%;"><b>' + it.username + '</b></div>');
+                        }
+
+                        item.append('<div class="d-inline-block" style="width: 20%;">' + it.first_name + ' ' + it.last_name + '</div>');
+                        item.append('<div class="d-inline-block" style="width: 20%;">' + it.email + '</div>');
+                        item.append('<div class="d-inline-block" style="width: 15%;">' + it.max_borrow_limit + '</div>');
+
+                        itemsList.append(item);
+                    }); 
+                    generatePaginationButtons(response.page_count);
+                },
+                error: function() {
+                    $('#itemsList').html('<p>An error occurred</p>');
+                }
+            });
+        });
+
+        $('#searchForm').trigger('submit');
+
+        // 点击search按钮时隐藏detail
+        $('#searchForm').click(function() {
+            $('#detail').html('');
+        });
+
+        // 处理添加分类
+        $('#addBtn').click(function() {
+            $.ajax({
+                url: '/admin/readers/add/',
+                type: 'get',
+                success: function(data) {
+                    $('#detail').html(data);
+                }
+            });
+        });
+
+        // 处理批量添加分类
+        $('#bulkAddBtn').click(function() {
+            $.ajax({
+                url: '/admin/readers/add_bulk/',
+                type: 'get',
+                success: function(data) {
+                    $('#detail').html(data);
+                }
+            });
+        });
+
+        // 处理编辑分类
+        $(document).on('click', '.editBtn', function() {
+            var readerId = $(this).data('id');
+            $.ajax({
+                url: '/admin/readers/edit/',
+                type: 'get',
+                data: {'reader_id': readerId},
+                success: function(data) {
+                    cachedEdit = data;
+                    $('#detail').html(data);
+                }
+            });
+        });
+
+        //当status checkbox被点击时，判断末状态，提交到相应的api disable enable
+        $(document).on('click', '.statusBtn', function() {
+            var readerId = $(this).data('id');
+            var csrfmiddlewaretoken = $('input[name="csrfmiddlewaretoken"]').val();
+            enableContent = 'Are you sure you want to enable this reader?';
+            disableContent = 'Are you sure you want to disable this reader?';
+            //判断点击后按钮状态
+            var status = $(this).hasClass('btn-success');
+            if (!status) {
+                if (confirm(enableContent)) {
+                    $.post('/admin/readers/enable/', {'reader_id': readerId, 'csrfmiddlewaretoken': csrfmiddlewaretoken}, function(data) {
+                        if (data.success) {
+                            alert('Reader enabled successfully!');
+                        } else {
+                            alert('Failed to enable reader! err: ' + data.error);
+                        }
+                        window.location.reload();
+                    });
+                }
+            } else {
+                if (confirm(disableContent)) {
+                    $.post('/admin/readers/disable/', {'reader_id': readerId, 'csrfmiddlewaretoken': csrfmiddlewaretoken}, function(data) {
+                        if (data.success) {
+                            alert('Reader disabled successfully!');
+                        } else {
+                            alert('Failed to disable reader! err: ' + data.error);
+                        }
+                        window.location.reload();
+                    });
+                }
+            }
+        });
+
+    });
+
+    // 使用全局变量生成分页按钮
+    function generatePaginationButtons(pageCount) {
+        $('#pagination').empty();
+        for (var i = 1; i <= pageCount; i++) {
+            // 美观的分页按钮
+            var btn = $('<button type="button" class="btn btn-outline-primary btn-sm mx-1 my-3">' + i + '</button>');
+            btn.attr('id', i);
+            $('#pagination').append(btn);
+        }
+
+        // 为每个按钮添加一个点击事件处理器
+        $('#pagination button').click(function() {
+            page = $(this).attr('id');
+            // trigger searchForm submit event
+            $('#searchForm').trigger('submit');
+        });
+    }
+</script>
+{% endblock %}
+
+{% block title %}Reader{% endblock %}
+
+{% block content %}
+    <div class="card mx-5 mt-4" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <h2>Search Readers</h2>
+        <div class="mb-2">
+            <button id="addBtn" class="btn btn-primary">Add Reader</button>
+            <button id="bulkAddBtn" class="btn btn-primary">Bulk Upload</button>
+        </div>
+        <form id="searchForm" method="post" class="form-inline">
+            {% csrf_token %}
+            <input type="text" id="keyword" name="keyword" class="form-control mr-sm-2" placeholder="Search for readers...">
+            <button type="submit" class="btn btn-warning">Search</button>
+        </form>
+    </div>
+
+    <div id="detail">
+    </div>
+
+    <div class="card mx-5 mt-3" style="background-color: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 10px;">
+        <div id="searchTitle"></div>
+        <ul id="itemsList" class="list-group">
+        </ul>
+        <div id="pagination"></div>
+    </div>
+{% endblock %}

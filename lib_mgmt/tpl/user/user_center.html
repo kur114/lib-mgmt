@@ -1,0 +1,172 @@
+{% extends 'user/tpl_sidebar.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+
+{% block head %}
+    <style>
+        .dashboard {
+            overflow: hidden;
+            opacity: 0.85; /* 更不透明 */
+        }
+        .dashboard:hover {
+            opacity: 1;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 更明显的阴影 */
+        }
+        .chart-card {
+            background-color: #fff;  /* 白色背景 */
+            opacity: 0.9;
+            margin: 0 auto;  /* 水平居中 */
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);  /* 添加一些阴影效果 */
+        }
+    </style>
+
+    {% load static %}
+    <script src="{% static 'js/chart.js' %}"></script>
+    <script>
+        $(document).ready(function() {
+            $.get('/api/user_borrow_stats?days=7', function(data) {
+                var ctx = document.getElementById('myDailyBorrowCount').getContext('2d');
+                var myDailyBorrowCount = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.map(item => item.date),
+                        datasets: [{
+                            label: 'My daily borrow count',
+                            data: data.map(item => item.count),
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'My daily borrow count',
+                                font: {
+                                    size: 25
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+        });  
+        $(document).ready(function() {
+            $.get('/api/top_borrowed_books', function(data) {
+                var topList = document.getElementById('topList').getElementsByTagName('tbody')[0];
+                var topListTitle = document.getElementById('topListTitle');
+                topListTitle.textContent = 'Top 5 borrowed books in the past 30 days';
+                topListTitle.style.fontWeight = 'bold';
+                topListTitle.style.color = '#757571';
+                topListTitle.style.textAlign = 'center';
+                topListTitle.style.fontSize = '25px';
+                topListTitle.style.marginTop = '5px';
+                topListTitle.style.marginBottom = '10px';
+                data.forEach(function(item, index) {
+                    var row = topList.insertRow();
+                    var cell1 = row.insertCell(0);
+                    var cell2 = row.insertCell(1);
+                    cell1.textContent = item.inventory__book__title;
+                    cell2.textContent = item.count;
+                    cell1.style.textAlign = 'center';
+                    cell2.style.textAlign = 'center';
+                    if (index === 0) {
+                        row.style.fontWeight = 'bold';
+                        row.style.color = 'darkgoldenrod';
+                    } else if (index === 1) {
+                        row.style.fontWeight = 'bold';
+                        row.style.color = 'darkgray';
+                    } else if (index === 2) {
+                        row.style.fontWeight = 'bold';
+                        row.style.color = 'saddlebrown';
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}
+
+
+{% block content %}
+    <div class="row mx-5">
+        <!-- Card: Book borrowed -->
+        <div class="col-md-6 py-2">
+            <div class="card dashboard text-white bg-primary mb-3">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-book-open fa-2x me-3"></i>
+                    <h5 class="card-title flex-grow-1 text-end me-3 number-shadow" style="font-size: 2em; left: 30px; bottom: -2px; position: relative;">{{ number.borrowed }}</h5>
+                    <div style="font-size: 1.5em;">Book borrowed</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Book will soon overdue -->
+        <div class="col-md-6 py-2">
+            <div class="card dashboard text-white bg-warning mb-3">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-clock fa-2x me-3"></i>
+                    <h5 class="card-title flex-grow-1 text-end me-3 number-shadow" style="font-size: 2em; left: 30px; bottom: -2px; position: relative;">{{ number.soon_overdue }}</h5>
+                    <div style="font-size: 1.5em;">Book will soon overdue</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Book overdue -->
+        <div class="col-md-6 py-2">
+            <div class="card dashboard text-white bg-danger mb-3">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                    <h5 class="card-title flex-grow-1 text-end me-3 number-shadow" style="font-size: 2em; left: 30px; bottom: -2px; position: relative;">{{ number.overdue }}</h5>
+                    <div style="font-size: 1.5em;">Book overdue</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Remaining quota -->
+        <div class="col-md-6 py-2">
+            <div class="card dashboard text-white bg-success mb-3">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-tasks fa-2x me-3"></i>
+                    <h5 class="card-title flex-grow-1 text-end me-3 number-shadow" style="font-size: 2em; left: 30px; bottom: -2px; position: relative;">{{ number.remaining_quota }}</h5>
+                    <div style="font-size: 1.5em;">Remaining quota</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 创建一个canvas元素用于渲染图表 -->
+        <div class="col-md-6 py-2">
+            <div class="card chart-card mb-3">
+                <div class="card-body">
+                    <canvas id="myDailyBorrowCount"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 py-2">
+            <div class="card chart-card mb-3">
+                <div class="card-body">
+                    <h3 id="topListTitle"></h3>
+                    <table id="topList" class="table">
+                        <thead>
+                            <tr>
+                                <th style="width: 75%; text-align: center;">Book title</th>
+                                <th style="width: 25%; text-align: center;">Borrow count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+{% endblock %}
